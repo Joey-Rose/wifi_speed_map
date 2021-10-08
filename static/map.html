@@ -75,7 +75,8 @@ body { margin: 0; padding: 0; }
             "cluster": true,
             "clusterMaxZoom": 14, // Max zoom to cluster points on
             "clusterRadius": 50,
-            "tiles": [`http://127.0.0.1:5000/static/merged_tiles/{z}/{x}/{y}.pbf`]
+            // "tiles": [`http://localhost:5000/static/merged_tiles/{z}/{x}/{y}.pbf`]
+            "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
         });
 
         // Add a layer showing the places.
