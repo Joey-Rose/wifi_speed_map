@@ -63,63 +63,78 @@ body { margin: 0; padding: 0; }
     });
 
     map.on('load', function () {
-        // map.addSource('places', {
-        //     'type': 'geojson',
-        //     'data': "{{ url_for('static', filename='dynamic_data.json') }}"
-        // });
+        fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
+            map.addSource('json_data', {
+            'type': 'geojson',
+            // 'data': "http://localhost:5000/static/dynamic_data.json"
+            'data': data
+            });
 
-        window.map.addSource('tiles', {
-            "type": "vector",
-            "minzoom": 0,
-            "maxzoom": 14,
-            "cluster": true,
-            "clusterMaxZoom": 14, // Max zoom to cluster points on
-            "clusterRadius": 50,
-            // "tiles": [`http://localhost:5000/static/merged_tiles/{z}/{x}/{y}.pbf`]
-            "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+            map.addLayer({
+                'id': 'json_data_point',
+                'type': 'circle',
+                'source': 'json_data',
+                'paint': {
+                    'circle-color': [
+                    'step',
+                    ['get', 'download'],
+                        '#f22d2d',
+                        1,
+                        '#eea322',
+                        25,
+                        '#e6df1e',
+                        50,
+                        '#bbda20',
+                        200,
+                        '#92ca23',
+                        500,
+                        '#82b825',
+                        1000,
+                        '#64a226'],
+                    'circle-radius': 6,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff'
+                }
+            });
         });
 
-        // Add a layer showing the places.
+        // window.map.addSource('tiles', {
+        //     "type": "vector",
+        //     "minzoom": 0,
+        //     "maxzoom": 14,
+        //     "cluster": true,
+        //     "clusterMaxZoom": 14, // Max zoom to cluster points on
+        //     // "tiles": [`http://localhost:5000/static/dynamic_data/{z}/{x}/{y}.pbf`]
+        //     "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+        // });
+
         // map.addLayer({
-        //     'id': 'places',
-        //     'type': 'circle',
-        //     'source': 'tiles',
+        //     "id": "S3_data_point",
+        //     "type": "circle",
+        //     "source": "tiles",
+        //     "source-layer": "data",
         //     'paint': {
-        //         'circle-color': '#4264fb',
+        //         'circle-color': [
+        //         'step',
+        //         ['get', 'download'],
+        //             '#f22d2d',
+        //             1,
+        //             '#eea322',
+        //             25,
+        //             '#e6df1e',
+        //             50,
+        //             '#bbda20',
+        //             200,
+        //             '#92ca23',
+        //             500,
+        //             '#82b825',
+        //             1000,
+        //             '#64a226'],
         //         'circle-radius': 6,
         //         'circle-stroke-width': 2,
         //         'circle-stroke-color': '#ffffff'
         //     }
         // });
-
-        map.addLayer({
-            "id": "test",
-            "type": "circle",
-            "source": "tiles",
-            "source-layer": "data",
-            'paint': {
-                // 'circle-color': '#4264fb',
-                'circle-color': [
-                'step',
-                ['get', 'download'],
-                    '#f22d2d',
-                    1,
-                    '#eea322',
-                    25,
-                    '#e6df1e',
-                    50,
-                    '#bbda20',
-                    200,
-                    '#92ca23',
-                    500,
-                    '#82b825',
-                    1000,
-                    '#64a226'],
-                'circle-radius': 6,
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff'
-            }
-        });
 
         // Create a popup, but don't add it to the map yet.
         var popup = new mapboxgl.Popup({
@@ -127,7 +142,8 @@ body { margin: 0; padding: 0; }
             closeOnClick: false
         });
 
-        map.on('mouseenter', 'test', function (e) {
+        // hover feature for daily json data
+        map.on('mouseenter', 'json_data_point', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
@@ -149,7 +165,35 @@ body { margin: 0; padding: 0; }
             popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
         });
 
-        map.on('mouseleave', 'test', function () {
+        map.on('mouseleave', 'json_data_point', function () {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+
+        // hover feature for S3 data
+        map.on('mouseenter', 'S3_data_point', function (e) {
+            // Change the cursor style as a UI indicator.
+            map.getCanvas().style.cursor = 'pointer';
+
+            var coordinates = e.features[0].geometry.coordinates.slice();
+            // var description = e.features[0].properties.description;
+            var download = e.features[0].properties.download;
+            var upload = e.features[0].properties.upload;
+            var date = e.features[0].properties.date;
+
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+
+            // Populate the popup and set its coordinates
+            // based on the feature found.
+            popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+        });
+
+        map.on('mouseleave', 'S3_data_point', function () {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });
