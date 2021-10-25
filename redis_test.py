@@ -56,40 +56,19 @@ def add_rand_test():
     lat = random.randrange(-90, 89) + round(random.random(), 6)
     long = random.randrange(-180, 89) + round(random.random(), 6)
     
-    new_user_input = {
-                    'type': 'Feature',
-                    "properties": {
-                        "download": download,
-                        "upload": upload,
-                        "date": date
-                    },
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': [long, lat]
-                    }
-                }
-    # write_succeeded = False
-    # while write_succeeded == False:
-    #     try:
-    #         r.ping()
-    #         r.execute_command('JSON.ARRAPPEND', 'geojson', '.features', json.dumps(new_user_input))
-    #         write_succeeded = True
-    #     except:
-    #         # print("trying again")
-    #         time.sleep(1)
-    #         pass
+    new_user_input = {'type': 'Feature',"properties": {"download": download,"upload": upload,"date": date, "point_count": 1},'geometry': {'type': 'Point','coordinates': [long, lat]}}
+
     # r.execute_command('JSON.ARRAPPEND', 'geojson', '.features', json.dumps(new_user_input))
-    print(requests.post("http://127.0.0.1:5001/set_json", data=json.dumps(new_user_input)).reason)
+    # requests.post("http://127.0.0.1:5001/set_json", data=json.dumps(new_user_input))
+    geojson['features'].append(new_user_input)
 
 start = time.time()
-for i in range(35):
-    threading.Thread(target=add_rand_test, args=()).start()
-    print("round:", i)
-    # if i == 17:
-    #     print(r.execute_command('JSON.GET', 'geojson').decode("utf-8"))
-    # add_rand_test()
+for i in range(1000000):
+    # threading.Thread(target=add_rand_test, args=()).start()
+    add_rand_test()
 end = time.time()
+print()
 print(end-start, "many seconds passed")
 # reply = r.execute_command('JSON.GET', 'geojson')
-# with open("dynamic_data.json", "w") as f:
-#     f.write(reply.decode("utf-8"))
+with open("./static/dynamic_data.json", "w") as f:
+    f.write(json.dumps(geojson))

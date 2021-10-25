@@ -1,4 +1,5 @@
 /static/dynamic_data/
 /static/s3_tiles/
 /static/merged_tiles/
+/static/clustered_tiles/
 .DS_STORE
