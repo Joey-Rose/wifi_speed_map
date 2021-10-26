@@ -137,21 +137,7 @@ body { margin: 0; padding: 0; }
         // });
 
         map.addLayer({
-            'id': 'clustered_points',
-            'type': 'symbol',
-            'source': 'tiles',
-            'source-layer': "data",
-            // point count > 1
-            'filter': ['>', 'point_count', 1],
-            'layout': {
-                'text-field': 'hi',
-                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                'text-size': 12
-            }
-        });
-            
-        map.addLayer({
-            'id': 'S3_data_point',
+            'id': 'generic-circle',
             'type': 'circle',
             'source': 'tiles',
             "source-layer": "data",
@@ -176,16 +162,42 @@ body { margin: 0; padding: 0; }
                 'circle-radius': [
                     'step',
                     ['get', 'point_count'],
-                    20,
-                    100,
-                    30,
-                    750,
+                    6, 2,
+                    20, 100,
+                    30, 750,
                     40
                 ],
                 'circle-stroke-width': 2,
                 'circle-stroke-color': '#ffffff'
             }
         });
+
+        map.addLayer({
+            'id': 'clustered_points',
+            'type': 'symbol',
+            'source': 'tiles',
+            'source-layer': "data",
+            // point count > 1
+            'filter': ['>', 'point_count', 1],
+            'layout': {
+                'text-field': '{point_count}',
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                'text-size': 12
+            }
+        });
+            
+        // map.addLayer({
+        //     'id': 'S3_data_point',
+        //     'type': 'symbol',
+        //     'source': 'tiles',
+        //     "source-layer": "data",
+        //     'filter': ['==', 'point_count', 1],
+        //     // 'paint': {
+        //     //     'circle-radius': 6,
+        //     //     'circle-stroke-width': 2,
+        //     //     'circle-stroke-color': '#ffffff'
+        //     // }
+        // });
 
         // Create a popup, but don't add it to the map yet.
         var popup = new mapboxgl.Popup({
@@ -203,6 +215,7 @@ body { margin: 0; padding: 0; }
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
+            var num_points = e.features[0].properties.num_points;
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
@@ -213,7 +226,7 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            if (num_points == 1) popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
         });
 
         map.on('mouseleave', 'json_data_point', function () {
@@ -222,7 +235,7 @@ body { margin: 0; padding: 0; }
         });
 
         // hover feature for S3 data
-        map.on('mouseenter', 'S3_data_point', function (e) {
+        map.on('mouseenter', 'generic-circle', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
@@ -231,6 +244,7 @@ body { margin: 0; padding: 0; }
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
+            var point_count = e.features[0].properties.point_count;
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
@@ -241,10 +255,13 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            console.log("point_count is " + point_count);
+            if (point_count == 1) {
+                popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            }
         });
 
-        map.on('mouseleave', 'S3_data_point', function () {
+        map.on('mouseleave', 'generic-circle', function () {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });
