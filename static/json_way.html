@@ -73,8 +73,7 @@ body { margin: 0; padding: 0; }
         clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
         clusterMinPoints: 1,
         clusterProperties: {
-            sum: ['+', ['get', 'download']],
-            avg_download: ['/', ['+', ['get', 'download']], ['get', 'point_count']]
+            sum_downloads: ['+', ['get', 'download']],
         }
         });
 
@@ -85,7 +84,11 @@ body { margin: 0; padding: 0; }
             'paint': {
                 'circle-color': [
                     'step',
-                    ['/', ['get', 'sum'], ['get', 'point_count']],
+                    ['coalesce',
+                        // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
+                        ['get', 'download'],
+                        ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
+                    ],
                     '#f22d2d',
                     1,
                     '#eea322',
@@ -144,9 +147,6 @@ body { margin: 0; padding: 0; }
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
             var point_count = e.features[0].properties.point_count;
-            var sum = e.features[0].properties.sum;
-            // var avg_download = e.features[0].properties.avg_download;
-            console.log("sum is " + sum + " , avg download is " + sum / point_count);
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
