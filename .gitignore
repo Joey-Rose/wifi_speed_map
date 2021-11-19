@@ -1,7 +1,2 @@
-/static/dynamic_data/
-/static/s3_tiles/
-/static/merged_tiles/
-/static/clustered_tiles/
-/static/parallel_tiles/
-/static/dynamic_data.json
+/static/*
 .DS_STORE

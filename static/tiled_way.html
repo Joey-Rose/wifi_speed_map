@@ -101,10 +101,8 @@ body { margin: 0; padding: 0; }
         window.map.addSource('tiles', {
             "type": "vector",
             "minzoom": 0,
-            "maxzoom": 14,
-            "cluster": true,
-            "clusterMaxZoom": 14, // Max zoom to cluster points on
-            "tiles": [`http://localhost:5000/static/clustered_tiles/{z}/{x}/{y}.pbf`]
+            "maxzoom": 10,
+            "tiles": [`http://localhost:5000/static/merged_tiles/{z}/{x}/{y}.pbf`]
             // "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
         });
 
@@ -174,7 +172,7 @@ body { margin: 0; padding: 0; }
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
-            var num_points = e.features[0].properties.num_points;
+            var point_count = e.features[0].properties.point_count;
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
@@ -185,7 +183,7 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            if (num_points == 1) popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            if (point_count == 1) popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
         });
 
         map.on('mouseleave', 'json_data_point', function () {

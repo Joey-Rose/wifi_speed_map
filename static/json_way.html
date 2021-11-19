@@ -58,7 +58,7 @@ body { margin: 0; padding: 0; }
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/streets-v11',
-        center: [-77.038659, 34.931567],
+        center: [-77.038659, 38.931567],
         zoom: 11.15
     });
 
@@ -66,12 +66,12 @@ body { margin: 0; padding: 0; }
         // fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
         map.addSource('json_data', {
         'type': 'geojson',
-        'data': "http://localhost:5000/static/dynamic_data.json",
-        maxzoom: 14,
+        'data': "http://localhost:5000/static/100000_points.json",
+        maxzoom: 9,
+        buffer: 0,
         cluster: true,
-        clusterMaxZoom: 14, // Max zoom to cluster points on
+        clusterMaxZoom: 9, // Max zoom to cluster points on
         clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
-        clusterMinPoints: 1,
         clusterProperties: {
             sum_downloads: ['+', ['get', 'download']],
         }
@@ -87,7 +87,7 @@ body { margin: 0; padding: 0; }
                     ['coalesce',
                         // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
                         ['get', 'download'],
-                        ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
+                        ['/', ['get', 'sum_downloads'], ['get', 'num_points']]
                     ],
                     '#f22d2d',
                     1,
@@ -105,7 +105,7 @@ body { margin: 0; padding: 0; }
                 ],
                 'circle-radius': [
                     'step',
-                    ['get', 'point_count'],
+                    ['get', 'num_points'],
                     6, 2,
                     20, 100,
                     30, 750,
@@ -121,9 +121,9 @@ body { margin: 0; padding: 0; }
             'type': 'symbol',
             'source': 'json_data',
             // point count > 1
-            'filter': ['>', 'point_count', 1],
+            'filter': ['>', 'num_points', 1],
             'layout': {
-                'text-field': '{point_count}',
+                'text-field': '{num_points}',
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                 'text-size': 12
             }
@@ -146,7 +146,7 @@ body { margin: 0; padding: 0; }
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
-            var point_count = e.features[0].properties.point_count;
+            var num_points = e.features[0].properties.num_points;
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
@@ -157,7 +157,7 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            if (point_count == 1) {
+            if (num_points == 1) {
                 popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
             }
         });
