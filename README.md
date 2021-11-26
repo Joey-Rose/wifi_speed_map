@@ -8,5 +8,9 @@ tippecanoe --minimum-zoom=0 --maximum-zoom=9 -e ./static/clustered_tiles_100000_
 
 tippecanoe --minimum-zoom=10 --maximum-zoom=10 -e ./static/clustered_tiles_1000000_points -r1 --layer=data --allow-existing ./static/1000000_points.json
 
+Merging folders together:
+Merging clusters: tippecanoe --minimum-zoom=0 --maximum-zoom=9 -e ./static/clustered_tiles_100_points -r1  --cluster-distance=75 --accumulate-attribute=download:mean --layer=data --force ./static/100000_points.json ./static/clustered_tiles_100_points
 
-        - tippecanoe -z14 -e ./static/clustered_tiles_100000_points -r1 --simplification=10 --cluster-distance=50 --accumulate-attribute=download:mean --layer=data --force ./static/100000_points.json
+Adding points to archived layer: tippecanoe --minimum-zoom=10 --maximum-zoom=10 -e ./static/clustered_tiles_100_points -r1 --layer=data --allow-existing ./static/100000_points.json ./static/clustered_tiles_100_points
+
+Just add another source and the processing takes place! Such processing does not take place with tile-join

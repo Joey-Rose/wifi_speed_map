@@ -64,71 +64,46 @@ body { margin: 0; padding: 0; }
 
     map.on('load', function () {
         // // fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
-        // map.addSource('json_data', {
-        // 'type': 'geojson',
-        // 'data': "http://localhost:5000/static/100_points.json"
-        // // 'data': data
-        // });
-
-        //     map.addLayer({
-        //         'id': 'json_data_point',
-        //         'type': 'circle',
-        //         'source': 'json_data',
-        //         'paint': {
-        //             'circle-color': [
-        //             'step',
-        //             ['get', 'download'],
-        //                 '#f22d2d',
-        //                 1,
-        //                 '#eea322',
-        //                 25,
-        //                 '#e6df1e',
-        //                 50,
-        //                 '#bbda20',
-        //                 200,
-        //                 '#92ca23',
-        //                 500,
-        //                 '#82b825',
-        //                 1000,
-        //                 '#64a226'],
-        //             'circle-radius': 6,
-        //             'circle-stroke-width': 2,
-        //             'circle-stroke-color': '#ffffff'
-        //         }
-        //     });
-        // });
-
-        window.map.addSource('tiles', {
-            "type": "vector",
-            "minzoom": 0,
-            "maxzoom": 10,
-            "tiles": [`http://localhost:5000/static/merged_tiles/{z}/{x}/{y}.pbf`]
-            // "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+        map.addSource('json_data', {
+            'type': 'geojson',
+            'data': "http://localhost:5000/static/100000_points.json",
+            maxzoom: 10,
+            buffer: 0,
+            cluster: true,
+            clusterMaxZoom: 9, // Max zoom to cluster points on
+            clusterRadius: 75, // Radius of each cluster when clustering points (defaults to 50)
+            clusterProperties: {
+                sum_downloads: ['+', ['get', 'download']],
+            }
         });
 
         map.addLayer({
-            'id': 'generic-circle',
+            'id': 'generic-circle-json',
             'type': 'circle',
-            'source': 'tiles',
-            "source-layer": "data",
+            'source': 'json_data',
             'paint': {
-                'circle-color': [
-                    'step',
-                    ['get', 'download'],
-                    '#f22d2d',
-                    1,
-                    '#eea322',
-                    25,
-                    '#e6df1e',
-                    50,
-                    '#bbda20',
-                    200,
-                    '#92ca23',
-                    500,
-                    '#82b825',
-                    1000,
-                    '#64a226'
-                ],
+                'circle-color': '#f22d2d',
+                    // 'step',
+                    // ['coalesce',
+                    //     // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
+                    //     ['get', 'download'],
+                    //     ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
+                    // ],
+                    // '#f22d2d',
+                    // 1,
+                    // '#eea322',
+                    // 25,
+                    // '#e6df1e',
+                    // 50,
+                    // '#bbda20',
+                    // 200,
+                    // '#92ca23',
+                    // 500,
+                    // '#82b825',
+                    // 1000,
+                    // '#64a226'
+                    // '#f22d2d'
+                // ],
                 'circle-radius': [
                     'step',
                     ['get', 'point_count'],
@@ -143,7 +118,64 @@ body { margin: 0; padding: 0; }
         });
 
         map.addLayer({
-            'id': 'clustered_points',
+            'id': 'clustered_points_json',
+            'type': 'symbol',
+            'source': 'json_data',
+            // point count > 1
+            'filter': ['>', 'point_count', 1],
+            'layout': {
+                'text-field': '{point_count}',
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                'text-size': 12
+            }
+        });
+
+        window.map.addSource('tiles', {
+            "type": "vector",
+            "minzoom": 0,
+            "maxzoom": 10,
+            "tiles": [`http://localhost:5000/static/clustered_tiles_100_points/{z}/{x}/{y}.pbf`]
+            // "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+        });
+
+        map.addLayer({
+            'id': 'generic-circle-tiled',
+            'type': 'circle',
+            'source': 'tiles',
+            "source-layer": "data",
+            'paint': {
+                'circle-color': '#64a226',
+                    // 'step',
+                    // ['get', 'download'],
+                    // '#f22d2d',
+                    // 1,
+                    // '#eea322',
+                    // 25,
+                    // '#e6df1e',
+                    // 50,
+                    // '#bbda20',
+                    // 200,
+                    // '#92ca23',
+                    // 500,
+                    // '#82b825',
+                    // 1000,
+                    // '#64a226'
+                // ],
+                'circle-radius': [
+                    'step',
+                    ['get', 'point_count'],
+                    6, 2,
+                    20, 100,
+                    30, 750,
+                    40
+                ],
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        map.addLayer({
+            'id': 'clustered_points_tiled',
             'type': 'symbol',
             'source': 'tiles',
             'source-layer': "data",
@@ -162,8 +194,8 @@ body { margin: 0; padding: 0; }
             closeOnClick: false
         });
 
-        // hover feature for daily json data
-        map.on('mouseenter', 'json_data_point', function (e) {
+        // hover feature for json data
+        map.on('mouseenter', 'generic-circle-json', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
@@ -183,16 +215,18 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            if (point_count == 1) popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            if (point_count == null) {
+                popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            }
         });
 
-        map.on('mouseleave', 'json_data_point', function () {
+        map.on('mouseleave', 'generic-circle-json', function () {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });
 
         // hover feature for S3 data
-        map.on('mouseenter', 'generic-circle', function (e) {
+        map.on('mouseenter', 'generic-circle-tiled', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
@@ -213,12 +247,12 @@ body { margin: 0; padding: 0; }
             // Populate the popup and set its coordinates
             // based on the feature found.
             console.log("point_count is " + point_count);
-            if (point_count == 1) {
+            if (point_count == null) {
                 popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
             }
         });
 
-        map.on('mouseleave', 'generic-circle', function () {
+        map.on('mouseleave', 'generic-circle-tiled', function () {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });

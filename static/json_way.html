@@ -66,7 +66,7 @@ body { margin: 0; padding: 0; }
         // fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
         map.addSource('json_data', {
         'type': 'geojson',
-        'data': "http://localhost:5000/static/100000_points.json",
+        'data': "http://localhost:5000/static/100_points_special.json",
         maxzoom: 9,
         buffer: 0,
         cluster: true,
@@ -87,7 +87,7 @@ body { margin: 0; padding: 0; }
                     ['coalesce',
                         // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
                         ['get', 'download'],
-                        ['/', ['get', 'sum_downloads'], ['get', 'num_points']]
+                        ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
                     ],
                     '#f22d2d',
                     1,
@@ -105,7 +105,7 @@ body { margin: 0; padding: 0; }
                 ],
                 'circle-radius': [
                     'step',
-                    ['get', 'num_points'],
+                    ['get', 'point_count'],
                     6, 2,
                     20, 100,
                     30, 750,
@@ -121,9 +121,9 @@ body { margin: 0; padding: 0; }
             'type': 'symbol',
             'source': 'json_data',
             // point count > 1
-            'filter': ['>', 'num_points', 1],
+            'filter': ['>', 'point_count', 1],
             'layout': {
-                'text-field': '{num_points}',
+                'text-field': '{point_count}',
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                 'text-size': 12
             }
@@ -146,7 +146,7 @@ body { margin: 0; padding: 0; }
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
-            var num_points = e.features[0].properties.num_points;
+            var point_count = e.features[0].properties.point_count;
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
@@ -157,7 +157,8 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            if (num_points == 1) {
+            console.log("point count is " + point_count);
+            if (point_count == null) {
                 popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
             }
         });
