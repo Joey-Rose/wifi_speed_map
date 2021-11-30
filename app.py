@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, Response
+from flask import Flask, render_template, request, Response, redirect, make_response
 import redis
 import json
 import jwt
@@ -26,6 +26,9 @@ def get_json():
 
 @app.route('/set_json', methods = ['POST', 'OPTIONS'])
 def set_json():
+    # resp = redirect("http://127.0.0.1:5001/tiled_way_orig")
+    # resp.headers['Access-Control-Allow-Origin'] = '*'
+    # resp.headers['Access-Control-Allow-Headers'] = '*'
     resp = Response(status=200)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     resp.headers['Access-Control-Allow-Headers'] = '*'
@@ -37,13 +40,10 @@ def set_json():
     print("payload is", payload)
     r.execute_command('JSON.ARRAPPEND', 'geojson', '.features', request.data)
     token = jwt.encode({'last_location': str(payload['geometry']['coordinates'][0]) + "," + str(payload['geometry']['coordinates'][1])}, app.config['SECRET_KEY'])
+    
+    # resp.set_cookie('last_location', token)
     resp.headers['Set-Cookie'] = 'last_location=' + token
-
     return resp
-
-@app.route('/mb2')
-def mb2():
-    return render_template('other_mapbox.html')
 
 @app.route('/wipe_redis_data')
 def wipe_redis_data():
@@ -55,6 +55,14 @@ def wipe_redis_data():
     reply = r.execute_command('JSON.SET', 'geojson', '.', json.dumps(inital_data))
 
     return reply
+
+@app.route('/tiled_way_orig')
+def tiled_way_orig():
+    return render_template('tiled_way_orig.html')
+
+@app.route('/authenticate')
+def authenticate():
+    return render_template('authenticate.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
