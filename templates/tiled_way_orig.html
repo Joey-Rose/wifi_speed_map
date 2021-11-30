@@ -56,7 +56,7 @@ body { margin: 0; padding: 0; }
 <script>
     // if the user's JWT doesn't exist, take them back to the auth page!
     let jwt_str = document.cookie.split('; ').find(row => row.startsWith('last_location='));
-    if (jwt_str == null) window.location = "./authenticate.html";
+    if (jwt_str == null) window.location = "./authenticate";
 
     // if the user's JWT is invalid, take them back to the auth page!
     // TODO: send api call to check if valid
@@ -82,7 +82,7 @@ body { margin: 0; padding: 0; }
 
         if (Math.abs(long - parseFloat(last_location[0])) > .0001 || Math.abs(lat - parseFloat(last_location[1])) > .0001) {
             alert("curr long: " + long + " curr lat: " + lat + " last long: " + parseFloat(last_location[0]) + " last lat: " + parseFloat(last_location[1]));
-            window.location = "./authenticate.html"; // TODO: does JWT need to be cleared here?
+            window.location = "./authenticate"; // TODO: does JWT need to be cleared here?
         }
     }
 
@@ -90,19 +90,17 @@ body { margin: 0; padding: 0; }
     var map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/streets-v11',
-        center: [-118.2142598, 34.1213601],
+        center: [parseFloat(last_location[0]), parseFloat(last_location[1])],
         zoom: 11.15
     });
 
     map.on('load', function () {
-        // extract last user location from jwt
-
         window.map.addSource('tiles', {
             "type": "vector",
             "minzoom": 0,
             "maxzoom": 10,
-            "tiles": [`http://localhost:5000/static/clustered_tiles_100_points/{z}/{x}/{y}.pbf`]
-            // "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+            // "tiles": [`http://localhost:5000/static/clustered_tiles_100_points/{z}/{x}/{y}.pbf`]
+            "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
         });
 
         map.addLayer({
@@ -111,23 +109,23 @@ body { margin: 0; padding: 0; }
             'source': 'tiles',
             "source-layer": "data",
             'paint': {
-                'circle-color': '#64a226',
-                    // 'step',
-                    // ['get', 'download'],
-                    // '#f22d2d',
-                    // 1,
-                    // '#eea322',
-                    // 25,
-                    // '#e6df1e',
-                    // 50,
-                    // '#bbda20',
-                    // 200,
-                    // '#92ca23',
-                    // 500,
-                    // '#82b825',
-                    // 1000,
-                    // '#64a226'
-                // ],
+                'circle-color': [
+                    'step',
+                    ['get', 'download'],
+                    '#f22d2d',
+                    1,
+                    '#eea322',
+                    25,
+                    '#e6df1e',
+                    50,
+                    '#bbda20',
+                    200,
+                    '#92ca23',
+                    500,
+                    '#82b825',
+                    1000,
+                    '#64a226'
+                ],
                 'circle-radius': [
                     'step',
                     ['get', 'point_count'],
@@ -135,10 +133,6 @@ body { margin: 0; padding: 0; }
                     20, 100,
                     30, 750,
                     40
-                    // 6, 2,
-                    // 200, 100,
-                    // 300, 750,
-                    // 400
                 ],
                 // 'circle-stroke-width': 2
                 // 'circle-stroke-color': '#ffffff'
@@ -166,35 +160,32 @@ body { margin: 0; padding: 0; }
                 'source': 'json_data',
                 'paint': {
                     'circle-color': [
-                        'case',
-                        ['boolean', ['feature-state', 'color'], true],
-                        'red',
-                        'blue'
-                    ],
-                    'circle-pitch-scale': 'viewport',
-
-                    // '#f22d2d',
-                        // 'step',
-                        // ['coalesce',
-                        //     // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
-                        //     ['get', 'download'],
-                        //     ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
-                        // ],
-                        // '#f22d2d',
-                        // 1,
-                        // '#eea322',
-                        // 25,
-                        // '#e6df1e',
-                        // 50,
-                        // '#bbda20',
-                        // 200,
-                        // '#92ca23',
-                        // 500,
-                        // '#82b825',
-                        // 1000,
-                        // '#64a226'
-                        // '#f22d2d'
+                    //     'case',
+                    //     ['boolean', ['feature-state', 'color'], true],
+                    //     'red',
+                    //     'blue'
                     // ],
+                    // '#f22d2d',
+                        'step',
+                        ['coalesce',
+                            // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
+                            ['get', 'download'],
+                            ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
+                        ],
+                        '#f22d2d',
+                        1,
+                        '#eea322',
+                        25,
+                        '#e6df1e',
+                        50,
+                        '#bbda20',
+                        200,
+                        '#92ca23',
+                        500,
+                        '#82b825',
+                        1000,
+                        '#64a226'
+                    ],
                     'circle-radius': [
                         'step',
                         ['get', 'point_count'],
@@ -223,8 +214,7 @@ body { margin: 0; padding: 0; }
                     'text-field': '{point_count}',
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                     'text-size': 12,
-                    'text-padding': 0,
-                    'symbol-z-order': 'viewport-y'
+                    'text-padding': 0
                     // 'text-allow-overlap': true,
                     // 'text-ignore-placement': true,
                     // 'icon-allow-overlap': true,
@@ -244,8 +234,7 @@ body { margin: 0; padding: 0; }
                 'text-field': '{point_count}',
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                 'text-size': 12,
-                'text-padding': 0,
-                'symbol-z-order': 'viewport-y'
+                'text-padding': 0
                 // 'text-allow-overlap': true,
                 // 'text-ignore-placement': true,
                 // 'icon-allow-overlap': true,
@@ -264,12 +253,12 @@ body { margin: 0; padding: 0; }
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
 
-            console.log("before");
-            map.setFeatureState(e.features[0], {'color': false });
-            map.setFeatureState(e.features[0], {'stroke': true });
+            // console.log("before");
+            // map.setFeatureState(e.features[0], {'color': false });
+            // map.setFeatureState(e.features[0], {'stroke': true });
             // map.setLayoutProperty('generic-circle-json', 'visibility', 'none');
-            console.log("after");
-            console.log(e);
+            // console.log("after");
+            // console.log(e);
             // map.setLayoutProperty('generic-circle-json', 'visibility', 'visible');
             var coordinates = e.features[0].geometry.coordinates.slice();
             // var description = e.features[0].properties.description;

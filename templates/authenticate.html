@@ -146,6 +146,10 @@
                     // should this be lat, long instead? 
                     geometry: {"type": "Point", "coordinates": [long, lat]}
                 })
+            }).then(data => {
+                window.location.href = "http://127.0.0.1:5001/tiled_way_orig";
+            }).catch((error) => {
+            console.error('Error:', error);
             });
         }
 
