@@ -10,7 +10,35 @@
 </head>
 
 <body>
-    <h1>hi</h1>
+<style>
+    body {
+        padding: 0 20vw;
+    }
+    .button {
+        background-color: #4CAF50; /* Green */
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        border-radius: 1vw;
+        cursor: pointer;
+    }
+    .button:hover {
+        background-color: #3e8e41;
+    }
+</style>
+    <h1>Wi-Fi Map</h1>
+    <p>Before you can get started, you must agree to the following conditions:</p>
+    <ul>
+        <li>A speedtest will be performed and uploaded to a publicly available map for all to see</li>
+        <li>All speedtest data will be anonymized. The only information other users will be able to see are you download speed, upload speed, and the date the test was taken</li>
+        <li>The speedtest will appear as a point on the map in the exact location you're currently at</li>
+    </ul>
+    <p>If you agree to these terms, click the button below to have your speedtest submitted and access granted to the map!</p>
+    <button class="button" onclick="getLocation()">Continue</button>
     <div id="sc-container">
         <div id="sc-branding" class="sc-bb">
             <a target="_blank" href="https://www.speedcheck.org/">
@@ -19,6 +47,22 @@
         </div>
     </div>
     <script>
+        let lat;
+        let long;
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition);
+                document.getElementById("sc-start-button").click();
+            } else { 
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function showPosition(position) {
+            lat = position.coords.latitude; 
+            long = position.coords.longitude;
+        }
+
         class ClassWatcher {
 
             constructor(targetNode, classToWatch, classAddedCallback, classRemovedCallback) {
@@ -71,30 +115,47 @@
             console.log(results_div);
 
             // watch for a specific class change
-            let classWatcher = new ClassWatcher(results_div, 'sc-is-shown', workOnClassAdd, workOnClassRemoval)
+            let classWatcher = new ClassWatcher(results_div, 'sc-is-shown', workAfterClassAdd, workAfterClassRemoval)
 
         }
-        
 
-        function workOnClassAdd() {
+        function workAfterClassAdd() {
             console.log("speed test just finished - extracting results now");
             let download_div = document.getElementById('sc-results-download');
-            let download_speed = download_div.getElementsByClassName('sc-value')[0].textContent;
+            let download_speed = parseInt(download_div.getElementsByClassName('sc-value')[0].textContent);
             console.log("download speed is " + download_speed + " Mbps");
 
             let upload_div = document.getElementById('sc-results-upload');
-            let upload_speed = upload_div.getElementsByClassName('sc-value')[0].textContent;
+            let upload_speed = parseInt(upload_div.getElementsByClassName('sc-value')[0].textContent);
             console.log("upload speed is " + upload_speed + " Mbps");
+
+            console.log("payload is " + JSON.stringify({
+                    type: "Feature", 
+                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
+                    // should this be lat, long instead? 
+                    geometry: {"type": "Point", "coordinates": [long, lat]}
+                }));
+            
+
+            fetch('http://127.0.0.1:5001/set_json', {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    type: "Feature", 
+                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
+                    // should this be lat, long instead? 
+                    geometry: {"type": "Point", "coordinates": [long, lat]}
+                })
+            });
         }
 
-        function workOnClassRemoval() {
+        function workAfterClassRemoval() {
             alert("I'm triggered when the class is removed");
         }
 
-        
         window.addEventListener('load', function() {
-        trigger_result_wait();
-    });
+            trigger_result_wait();
+        });
         </script>
     <script src="https://cdn.speedcheck.org/basic/scbjs.min.js"></script>
   
