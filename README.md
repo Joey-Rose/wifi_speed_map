@@ -18,7 +18,7 @@ Just add another source and the processing takes place! Such processing does not
 
 # How to get setup
 - cd into a folder of your choice
-- git clone https://github.com/Joey-Rose/wifi_speed_map.git
+- git clone -b cluster-points https://github.com/Joey-Rose/wifi_speed_map.git
 - cd wifi_speed_map
 - python3 -m venv venv
 - . venv/bin/activate
