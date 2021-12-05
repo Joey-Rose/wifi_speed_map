@@ -51,7 +51,7 @@
         let long;
         function getLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition);
+                navigator.geolocation.getCurrentPosition(showPosition, null, {enableHighAccuracy: true});
                 document.getElementById("sc-start-button").click();
             } else { 
                 alert("Geolocation is not supported by this browser.");
@@ -61,6 +61,38 @@
         function showPosition(position) {
             lat = position.coords.latitude; 
             long = position.coords.longitude;
+        }
+
+        var post_when_location_extracted = function(download_speed, upload_speed){
+            if (lat != null && long != null) {
+                console.log("payload is " + JSON.stringify({
+                    type: "Feature", 
+                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
+                    // should this be lat, long instead? 
+                    geometry: {"type": "Point", "coordinates": [long, lat]}
+                }));
+
+                // fetch('http://127.0.0.1:5001/set_json', {
+                fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/set_json', {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        type: "Feature", 
+                        properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
+                        // should this be lat, long instead? 
+                        geometry: {"type": "Point", "coordinates": [long, lat]}
+                    })
+                }).then(response => response.json()).then(data => {
+                    document.cookie = "last_location="+data['last_location'];
+                    window.location = "./tiled_way_orig.html";
+                }).catch((error) => {
+                console.error('Error:', error);
+                });
+            }
+            else {
+                console.log("checking location again in 1 second");
+                setTimeout(post_when_location_extracted(download_speed, upload_speed), 1000); // check again in a second
+            }
         }
 
         class ClassWatcher {
@@ -128,29 +160,7 @@
             let upload_div = document.getElementById('sc-results-upload');
             let upload_speed = parseInt(upload_div.getElementsByClassName('sc-value')[0].textContent);
             console.log("upload speed is " + upload_speed + " Mbps");
-
-            console.log("payload is " + JSON.stringify({
-                    type: "Feature", 
-                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
-                    // should this be lat, long instead? 
-                    geometry: {"type": "Point", "coordinates": [long, lat]}
-                }));
-            
-
-            fetch('http://127.0.0.1:5001/set_json', {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    type: "Feature", 
-                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
-                    // should this be lat, long instead? 
-                    geometry: {"type": "Point", "coordinates": [long, lat]}
-                })
-            }).then(data => {
-                window.location.href = "http://127.0.0.1:5001/tiled_way_orig";
-            }).catch((error) => {
-            console.error('Error:', error);
-            });
+            post_when_location_extracted(download_speed, upload_speed);
         }
 
         function workAfterClassRemoval() {

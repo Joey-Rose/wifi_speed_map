@@ -56,7 +56,7 @@ body { margin: 0; padding: 0; }
 <script>
     // if the user's JWT doesn't exist, take them back to the auth page!
     let jwt_str = document.cookie.split('; ').find(row => row.startsWith('last_location='));
-    if (jwt_str == null) window.location = "./authenticate";
+    if (jwt_str == null) window.location = "./authenticate.html";
 
     // if the user's JWT is invalid, take them back to the auth page!
     // TODO: send api call to check if valid
@@ -65,24 +65,22 @@ body { margin: 0; padding: 0; }
     let data_section = parseJwt(jwt_str.split('=')[1]);
     console.log("data section is " + JSON.stringify(data_section));
     let last_location = data_section["last_location"].split(",");
-    let lat;
-    let long;
-    getLocation();
-    function getLocation() {
+
+    function verifyLocation(last_location) {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showPosition);
+            navigator.geolocation.getCurrentPosition(showPosition, null, {enableHighAccuracy: true});
         } else { 
             alert("Geolocation is not supported by this browser.");
         }
     }
 
     function showPosition(position) {
-        lat = position.coords.latitude; 
-        long = position.coords.longitude;
+        let lat = position.coords.latitude; 
+        let long = position.coords.longitude;
 
         if (Math.abs(long - parseFloat(last_location[0])) > .0001 || Math.abs(lat - parseFloat(last_location[1])) > .0001) {
-            alert("curr long: " + long + " curr lat: " + lat + " last long: " + parseFloat(last_location[0]) + " last lat: " + parseFloat(last_location[1]));
-            window.location = "./authenticate"; // TODO: does JWT need to be cleared here?
+            alert("Your location has changed since your last visit! Please take another speedtest to help grow the map :)");
+            window.location = "./authenticate.html"; // JWT does not need to be changed / erased here
         }
     }
 
@@ -99,8 +97,8 @@ body { margin: 0; padding: 0; }
             "type": "vector",
             "minzoom": 0,
             "maxzoom": 10,
-            // "tiles": [`http://localhost:5000/static/clustered_tiles_100_points/{z}/{x}/{y}.pbf`]
-            "tiles": [`https://user-data-tiles.s3.us-east-2.amazonaws.com/{z}/{x}/{y}.pbf`]
+            // "tiles": [`http://localhost:5000/static/clustered_tiles_1000000_points/{z}/{x}/{y}.pbf`]
+            "tiles": [`https://s3.us-west-1.amazonaws.com/www.wifimap.live/{z}/{x}/{y}.pbf`]
         });
 
         map.addLayer({
@@ -134,12 +132,18 @@ body { margin: 0; padding: 0; }
                     30, 750,
                     40
                 ],
-                // 'circle-stroke-width': 2
-                // 'circle-stroke-color': '#ffffff'
+                'circle-stroke-width': [
+                        'case',
+                        ['has', 'point_count'],
+                        0,
+                        1
+                    ],
+                'circle-stroke-color': '#000000'
             }
         });
 
-        fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
+        // fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
+        fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/get_json').then(response => response.json()).then(data => {
             map.addSource('json_data', {
                 'type': 'geojson',
                 // 'data': "http://localhost:5000/static/10000_points.json",
@@ -196,20 +200,23 @@ body { margin: 0; padding: 0; }
                     ],
                     'circle-stroke-width': [
                         'case',
-                        ['boolean', ['feature-state', 'stroke'], false],
-                        2,
-                        0
+                        ['has', 'point_count'],
+                        0,
+                        1
                     ],
-                    // 'circle-stroke-color': '#ffffff'
+                // 'circle-stroke-color': '#ffffff'
+                'circle-stroke-color': '#000000'
                 }
             });
+
+            verifyLocation(last_location);
 
             map.addLayer({
                 'id': 'clustered_points_json',
                 'type': 'symbol',
                 'source': 'json_data',
                 // point count > 1
-                'filter': ['>', 'point_count', 1],
+                'filter': ['has', 'point_count'],
                 'layout': {
                     'text-field': '{point_count}',
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
@@ -229,7 +236,7 @@ body { margin: 0; padding: 0; }
             'source': 'tiles',
             'source-layer': "data",
             // point count > 1
-            'filter': ['>', 'point_count', 1],
+            'filter': ['has', 'point_count'],
             'layout': {
                 'text-field': '{point_count}',
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
@@ -252,8 +259,8 @@ body { margin: 0; padding: 0; }
         map.on('mouseenter', 'generic-circle-json', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
-
-            // console.log("before");
+        });
+        map.on('click', 'generic-circle-json', function (e) {
             // map.setFeatureState(e.features[0], {'color': false });
             // map.setFeatureState(e.features[0], {'stroke': true });
             // map.setLayoutProperty('generic-circle-json', 'visibility', 'none');
@@ -283,15 +290,13 @@ body { margin: 0; padding: 0; }
 
         map.on('mouseleave', 'generic-circle-json', function () {
             map.getCanvas().style.cursor = '';
-            popup.remove();
+            // popup.remove();
         });
 
         // hover feature for S3 data
         map.on('mouseenter', 'generic-circle-tiled', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
-
-            console.log(e);
 
             var coordinates = e.features[0].geometry.coordinates.slice();
             // var description = e.features[0].properties.description;
@@ -309,7 +314,27 @@ body { margin: 0; padding: 0; }
 
             // Populate the popup and set its coordinates
             // based on the feature found.
-            console.log("point_count is " + point_count);
+            if (point_count == null) {
+                popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
+            }
+        });
+        map.on('click', 'generic-circle-tiled', function (e) {
+            var coordinates = e.features[0].geometry.coordinates.slice();
+            // var description = e.features[0].properties.description;
+            var download = e.features[0].properties.download;
+            var upload = e.features[0].properties.upload;
+            var date = e.features[0].properties.date;
+            var point_count = e.features[0].properties.point_count;
+
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+
+            // Populate the popup and set its coordinates
+            // based on the feature found.
             if (point_count == null) {
                 popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
             }
@@ -317,7 +342,7 @@ body { margin: 0; padding: 0; }
 
         map.on('mouseleave', 'generic-circle-tiled', function () {
             map.getCanvas().style.cursor = '';
-            popup.remove();
+            // popup.remove();
         });
     });
 
