@@ -1,2 +1,6 @@
+/archive/*
+/get_json_lambda/*
+/set_json_lambda/*
 /static/*
+/venv/*
 .DS_STORE
