@@ -11,13 +11,13 @@ RUN ./aws/install
 RUN cp /usr/local/bin/aws /opt/aws
 
 # Copy function code to container
-COPY lambda.py ./
+COPY archival_lambda.py ./
 
-# copy requirements.txt to container
-COPY requirements.txt ./
+# copy archival_lambda_requirements.txt to container
+COPY archival_lambda_requirements.txt ./
 
 # installing dependencies
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r archival_lambda_requirements.txt
 
 # Create a build directory; clone tippecanoe; and copy in all files
 RUN mkdir -p /build
@@ -36,4 +36,4 @@ RUN cp ./tile-join /opt/tile-join
 WORKDIR /opt
 
 # setting the CMD to your handler file_name.function_name
-CMD [ "lambda.handler" ]
+CMD [ "archival_lambda.handler" ]

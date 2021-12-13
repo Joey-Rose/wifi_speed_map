@@ -49,9 +49,9 @@ body { margin: 0; padding: 0; }
     <div><span style="background-color: #82b825"></span>&lt 1,000</div>
     <div><span style="background-color: #92ca23"></span>&lt 500</div>
     <div><span style="background-color: #bbda20"></span>&lt 200</div>
-    <div><span style="background-color: #e6df1e"></span>&lt 50</div>
-    <div><span style="background-color: #eea322"></span>&lt 25</div>
-    <div><span style="background-color: #f22d2d"></span>&lt 1</div>
+    <div><span style="background-color: #e6df1e"></span>&lt 100</div>
+    <div><span style="background-color: #eea322"></span>&lt 50</div>
+    <div><span style="background-color: #f22d2d"></span>&lt 25</div>
     </div>
 <script>
     // if the user's JWT doesn't exist, take them back to the auth page!
@@ -68,7 +68,10 @@ body { margin: 0; padding: 0; }
 
     function verifyLocation(last_location) {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showPosition, null, {enableHighAccuracy: true});
+            navigator.geolocation.getCurrentPosition(showPosition, err => {
+                    alert("Location services are needed to run this app. If you are on a mobile device, please enable them by visiting Settings > Privacy > Location > [browser] 🙏");
+                    window.location.href = window.location.href;
+                }, {enableHighAccuracy: true});
         } else { 
             alert("Geolocation is not supported by this browser.");
         }
@@ -97,8 +100,8 @@ body { margin: 0; padding: 0; }
             "type": "vector",
             "minzoom": 0,
             "maxzoom": 10,
-            // "tiles": [`http://localhost:5000/static/clustered_tiles_1000000_points/{z}/{x}/{y}.pbf`]
-            "tiles": [`https://s3.us-west-1.amazonaws.com/www.wifimap.live/{z}/{x}/{y}.pbf`]
+            "tiles": [`http://localhost:5000/static/clustered_tiles_1000_points/{z}/{x}/{y}.pbf`]
+            // "tiles": [`https://s3.us-west-1.amazonaws.com/www.wifimap.live/{z}/{x}/{y}.pbf`]
         });
 
         map.addLayer({
@@ -111,11 +114,11 @@ body { margin: 0; padding: 0; }
                     'step',
                     ['get', 'download'],
                     '#f22d2d',
-                    1,
-                    '#eea322',
                     25,
-                    '#e6df1e',
+                    '#eea322',
                     50,
+                    '#e6df1e',
+                    100,
                     '#bbda20',
                     200,
                     '#92ca23',
@@ -142,8 +145,8 @@ body { margin: 0; padding: 0; }
             }
         });
 
-        // fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
-        fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/get_json').then(response => response.json()).then(data => {
+        fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
+        // fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/get_json').then(response => response.json()).then(data => {
             map.addSource('json_data', {
                 'type': 'geojson',
                 // 'data': "http://localhost:5000/static/10000_points.json",
@@ -177,11 +180,11 @@ body { margin: 0; padding: 0; }
                             ['/', ['get', 'sum_downloads'], ['get', 'point_count']]
                         ],
                         '#f22d2d',
-                        1,
-                        '#eea322',
                         25,
-                        '#e6df1e',
+                        '#eea322',
                         50,
+                        '#e6df1e',
+                        100,
                         '#bbda20',
                         200,
                         '#92ca23',
@@ -209,7 +212,7 @@ body { margin: 0; padding: 0; }
                 }
             });
 
-            verifyLocation(last_location);
+            // verifyLocation(last_location);
 
             map.addLayer({
                 'id': 'clustered_points_json',
@@ -252,7 +255,7 @@ body { margin: 0; padding: 0; }
         // Create a popup, but don't add it to the map yet.
         var popup = new mapboxgl.Popup({
             closeButton: false,
-            closeOnClick: false
+            closeOnClick: true
         });
 
         // hover feature for json data
@@ -297,26 +300,6 @@ body { margin: 0; padding: 0; }
         map.on('mouseenter', 'generic-circle-tiled', function (e) {
             // Change the cursor style as a UI indicator.
             map.getCanvas().style.cursor = 'pointer';
-
-            var coordinates = e.features[0].geometry.coordinates.slice();
-            // var description = e.features[0].properties.description;
-            var download = e.features[0].properties.download;
-            var upload = e.features[0].properties.upload;
-            var date = e.features[0].properties.date;
-            var point_count = e.features[0].properties.point_count;
-
-            // Ensure that if the map is zoomed out such that multiple
-            // copies of the feature are visible, the popup appears
-            // over the copy being pointed to.
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-            }
-
-            // Populate the popup and set its coordinates
-            // based on the feature found.
-            if (point_count == null) {
-                popup.setLngLat(coordinates).setHTML("Download: " + download + " Mbps, Upload: " + upload + " Mbps, Date: " + date).addTo(map);
-            }
         });
         map.on('click', 'generic-circle-tiled', function (e) {
             var coordinates = e.features[0].geometry.coordinates.slice();
