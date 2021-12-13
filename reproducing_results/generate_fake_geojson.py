@@ -2,6 +2,11 @@ import json
 import random
 import time
 
+geojson = {
+            'type': 'FeatureCollection',
+            'features': []
+        }
+
 def add_rand_test():
     download = random.randrange(1, 1001)
     upload = random.randrange(1, 1001)
