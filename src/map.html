@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Display a popup on hover</title>
+<title>Map of Wi-Fi network qualities</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.js"></script>
@@ -63,7 +63,6 @@ body { margin: 0; padding: 0; }
 
     // if current location differs from last test location specified in user's JWT, take them back to the auth page!
     let data_section = parseJwt(jwt_str.split('=')[1]);
-    console.log("data section is " + JSON.stringify(data_section));
     let last_location = data_section["last_location"].split(",");
 
     function verifyLocation(last_location) {
@@ -100,8 +99,7 @@ body { margin: 0; padding: 0; }
             "type": "vector",
             "minzoom": 0,
             "maxzoom": 10,
-            "tiles": [`http://localhost:5000/static/clustered_tiles_1000_points/{z}/{x}/{y}.pbf`]
-            // "tiles": [`https://s3.us-west-1.amazonaws.com/www.wifimap.live/{z}/{x}/{y}.pbf`]
+            "tiles": [`https://s3.us-west-1.amazonaws.com/www.wifimap.live/{z}/{x}/{y}.pbf`]
         });
 
         map.addLayer({
@@ -145,14 +143,12 @@ body { margin: 0; padding: 0; }
             }
         });
 
-        fetch('http://127.0.0.1:5001/get_json').then(response => response.json()).then(data => {
-        // fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/get_json').then(response => response.json()).then(data => {
+        fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/get_json').then(response => response.json()).then(data => {
             map.addSource('json_data', {
                 'type': 'geojson',
-                // 'data': "http://localhost:5000/static/10000_points.json",
                 'data': data,
                 maxzoom: 10,
-                buffer: 0,
+                buffer: 0, // reduces size of tiles created
                 cluster: true,
                 clusterMaxZoom: 9, // Max zoom to cluster points on
                 clusterRadius: 75, // Radius of each cluster when clustering points (defaults to 50)
@@ -167,12 +163,6 @@ body { margin: 0; padding: 0; }
                 'source': 'json_data',
                 'paint': {
                     'circle-color': [
-                    //     'case',
-                    //     ['boolean', ['feature-state', 'color'], true],
-                    //     'red',
-                    //     'blue'
-                    // ],
-                    // '#f22d2d',
                         'step',
                         ['coalesce',
                             // if no single download speed value exists because data is a cluster, get the average download speed of cluster instead
@@ -207,28 +197,22 @@ body { margin: 0; padding: 0; }
                         0,
                         1
                     ],
-                // 'circle-stroke-color': '#ffffff'
                 'circle-stroke-color': '#000000'
                 }
             });
 
-            // verifyLocation(last_location);
+            verifyLocation(last_location);
 
             map.addLayer({
                 'id': 'clustered_points_json',
                 'type': 'symbol',
                 'source': 'json_data',
-                // point count > 1
                 'filter': ['has', 'point_count'],
                 'layout': {
                     'text-field': '{point_count}',
                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                     'text-size': 12,
                     'text-padding': 0
-                    // 'text-allow-overlap': true,
-                    // 'text-ignore-placement': true,
-                    // 'icon-allow-overlap': true,
-                    // 'icon-ignore-placement': true,
                     }
             });
         });
@@ -238,17 +222,12 @@ body { margin: 0; padding: 0; }
             'type': 'symbol',
             'source': 'tiles',
             'source-layer': "data",
-            // point count > 1
             'filter': ['has', 'point_count'],
             'layout': {
                 'text-field': '{point_count}',
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                 'text-size': 12,
                 'text-padding': 0
-                // 'text-allow-overlap': true,
-                // 'text-ignore-placement': true,
-                // 'icon-allow-overlap': true,
-                // 'icon-ignore-placement': true,
             }
         });
 
@@ -264,14 +243,7 @@ body { margin: 0; padding: 0; }
             map.getCanvas().style.cursor = 'pointer';
         });
         map.on('click', 'generic-circle-json', function (e) {
-            // map.setFeatureState(e.features[0], {'color': false });
-            // map.setFeatureState(e.features[0], {'stroke': true });
-            // map.setLayoutProperty('generic-circle-json', 'visibility', 'none');
-            // console.log("after");
-            // console.log(e);
-            // map.setLayoutProperty('generic-circle-json', 'visibility', 'visible');
             var coordinates = e.features[0].geometry.coordinates.slice();
-            // var description = e.features[0].properties.description;
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
@@ -293,7 +265,6 @@ body { margin: 0; padding: 0; }
 
         map.on('mouseleave', 'generic-circle-json', function () {
             map.getCanvas().style.cursor = '';
-            // popup.remove();
         });
 
         // hover feature for S3 data
@@ -303,7 +274,6 @@ body { margin: 0; padding: 0; }
         });
         map.on('click', 'generic-circle-tiled', function (e) {
             var coordinates = e.features[0].geometry.coordinates.slice();
-            // var description = e.features[0].properties.description;
             var download = e.features[0].properties.download;
             var upload = e.features[0].properties.upload;
             var date = e.features[0].properties.date;
@@ -325,7 +295,6 @@ body { margin: 0; padding: 0; }
 
         map.on('mouseleave', 'generic-circle-tiled', function () {
             map.getCanvas().style.cursor = '';
-            // popup.remove();
         });
     });
 

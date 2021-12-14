@@ -63,6 +63,7 @@
             long = position.coords.longitude;
         }
 
+        // creates a class capable of watching for the assignment of a certain class to a certain DOM element
         class ClassWatcher {
 
             constructor(targetNode, classToWatch, classAddedCallback, classRemovedCallback) {
@@ -109,46 +110,32 @@
 
 
         function trigger_result_wait () {
-            // let speedcheck_div = document.getElementById('sc-container');
             let results_div = document.getElementById('sc-results');
             
-            console.log(results_div);
-
             // watch for a specific class change
             let classWatcher = new ClassWatcher(results_div, 'sc-is-shown', workAfterClassAdd, workAfterClassRemoval)
 
         }
 
+        // the code that runs after the 'sc-is-shown' class is added to the Speedcheck results div
         function workAfterClassAdd() {
-            console.log("speed test just finished - extracting results now");
             let download_div = document.getElementById('sc-results-download');
             let download_speed = parseInt(download_div.getElementsByClassName('sc-value')[0].textContent);
-            console.log("download speed is " + download_speed + " Mbps");
 
             let upload_div = document.getElementById('sc-results-upload');
             let upload_speed = parseInt(upload_div.getElementsByClassName('sc-value')[0].textContent);
-            console.log("upload speed is " + upload_speed + " Mbps");
 
-            console.log("payload is " + JSON.stringify({
-                    type: "Feature", 
-                    properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
-                    // should this be lat, long instead? 
-                    geometry: {"type": "Point", "coordinates": [long, lat]}
-                }));
-
-            // fetch('http://127.0.0.1:5001/set_json', {
             fetch('https://cm4nogv8s9.execute-api.us-west-1.amazonaws.com/set_json', {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     type: "Feature", 
                     properties: {"download": download_speed, "upload": upload_speed, "date": new Date(Date.now()).toLocaleString().split(',')[0]},
-                    // should this be lat, long instead? 
                     geometry: {"type": "Point", "coordinates": [long, lat]}
                 })
             }).then(response => response.json()).then(data => {
                 document.cookie = "last_location="+data['last_location'];
-                window.location = "./proposed_map.html";
+                window.location = "./map.html";
             }).catch((error) => {
             console.error('Error:', error);
             });
@@ -158,6 +145,7 @@
             alert("I'm triggered when the class is removed");
         }
 
+        // only begin to wait for the Speedcheck results div once it has been added to the DOM
         window.addEventListener('load', function() {
             trigger_result_wait();
         });
